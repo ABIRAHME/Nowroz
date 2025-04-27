@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "name": "Classic White Tee test",
+    "description": "Our signature organic cotton t-shirt in crisp white.",
+    "price": 499.99,
+    "image": "images/product1.jpg",
+    "category": "Basic",
+    "details": "Made from 100% organic cotton, our Classic White Tee offers unmatched comfort and durability. The breathable fabric ensures you stay cool throughout the day, while the timeless design pairs perfectly with any outfit. Each t-shirt undergoes rigorous quality checks to ensure the highest standards.",
+    "features": [
+      "100% organic cotton",
+      "Breathable fabric",
+      "Reinforced stitching",
+      "Pre-shrunk material",
+      "Eco-friendly dyes"
+    ],
+    "sizes": ["S", "M", "L", "XL", "XXL"],
+    "colors": ["White"]
+  },
+  {
+    "id": 2,
+    "name": "Eco Print Tee",
+    "description": "Naturally dyed cotton with our exclusive mountain design.",
+    "price": 599.99,
+    "image": "images/product2.jpg",
+    "category": "Graphic",
+    "details": "The Eco Print Tee features our exclusive mountain design, printed using natural dyes on 100% organic cotton. Each piece is unique with slight variations in the print, making your t-shirt truly one-of-a-kind. The relaxed fit and soft fabric provide exceptional comfort for everyday wear.",
+    "features": [
+      "Natural dye printing",
+      "Unique variations in each piece",
+      "100% organic cotton",
+      "Relaxed fit",
+      "Low environmental impact"
+    ],
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": ["Natural", "Sage"]
+  },
+  {
+    "id": 3,
+    "name": "Minimalist Black Tee",
+    "description": "Premium organic cotton in a timeless black design.",
+    "price": 399.99,
+    "image": "images/product4.jpg",
+    "category": "Basic",
+    "details": "Our Minimalist Black Tee is crafted from premium organic cotton for exceptional softness and durability. The deep, rich black color is achieved using eco-friendly dyes that maintain their intensity through multiple washes. The versatile design makes this t-shirt perfect for any occasion, from casual outings to more formal settings.",
+    "features": [
+      "Premium organic cotton",
+      "Eco-friendly black dye",
+      "Color-fast through washing",
+      "Versatile styling options",
+      "Durable construction"
+    ],
+    "sizes": ["S", "M", "L", "XL", "XXL"],
+    "colors": ["Black"]
+  },
+  {
+    "id": 4,
+    "name": "Striped Sailor Tee",
+    "description": "Classic navy and white striped design for a nautical look.",
+    "price": 279.99,
+    "image": "images/product3.jpg",
+    "category": "Pattern",
+    "details": "The Striped Sailor Tee brings a touch of nautical style to your wardrobe. Made from organic cotton with a touch of stretch for comfort, this navy and white striped t-shirt features a slightly heavier weight fabric for durability and structure. Perfect for coastal getaways or adding a maritime touch to your everyday look.",
+    "features": [
+      "Organic cotton with stretch",
+      "Classic navy and white stripes",
+      "Medium-weight fabric",
+      "Structured fit",
+      "Reinforced collar"
+    ],
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": ["Navy/White"]
+  },
+  {
+    "id": 5,
+    "name": "Botanical Print Tee",
+    "description": "Elegant floral design printed with plant-based inks.",
+    "price": 349.99,
+    "image": "images/product5.jpg",
+    "category": "Graphic",
+    "details": "Our Botanical Print Tee features an elegant floral design printed using plant-based inks on organic cotton. The subtle pattern adds a touch of nature to your outfit while maintaining a sophisticated look. The lightweight fabric drapes beautifully and provides excellent breathability for comfort in any weather.",
+    "features": [
+      "Plant-based ink printing",
+      "Elegant floral design",
+      "Lightweight organic cotton",
+      "Beautiful drape",
+      "Highly breathable"
+    ],
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": ["Cream", "Sage"]
+  },
+  {
+    "id": 6,
+    "name": "Vintage Wash Tee",
+    "description": "Pre-washed for extra softness with a lived-in feel.",
+    "price": 259.99,
+    "image": "images/product6.jpg",
+    "category": "Basic",
+    "details": "The Vintage Wash Tee undergoes a special pre-washing process to achieve exceptional softness and a comfortable lived-in feel from the first wear. Made from organic cotton and featuring a slightly relaxed fit, this t-shirt becomes more comfortable with each wash while maintaining its shape and color integrity.",
+    "features": [
+      "Special pre-washing process",
+      "Ultra-soft feel",
+      "Relaxed fit",
+      "Organic cotton",
+      "Color stability"
+    ],
+    "sizes": ["S", "M", "L", "XL", "XXL"],
+    "colors": ["Faded Blue", "Washed Black", "Vintage Red"]
+  }
+]

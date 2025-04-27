@@ -1,0 +1,9 @@
+This is a placeholder file to ensure the images directory exists.
+
+Please add the following product images to this directory:
+- product1.jpg - Classic White Tee
+- product2.jpg - Eco Print Tee
+- product3.jpg - Striped Sailor Tee
+- product4.jpg - Minimalist Black Tee
+- product5.jpg - Botanical Print Tee
+- product6.jpg - Vintage Wash Tee
