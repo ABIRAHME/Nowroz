@@ -13,14 +13,18 @@ function checkAuth() {
     const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     const currentUser = sessionStorage.getItem('adminUsername');
     
+    // Get the current path
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath.endsWith('index.html') || currentPath.endsWith('/admin/') || currentPath === '/admin';
+    
     // If not logged in and not on login page, redirect to login
-    if (!isLoggedIn && !window.location.pathname.includes('index.html')) {
-        window.location.href = 'index.html';
+    if (!isLoggedIn && !isLoginPage) {
+        window.location.href = currentPath.includes('/admin/') ? 'index.html' : '/admin/index.html';
         return false;
     }
     
     // If logged in and on login page, redirect to dashboard
-    if (isLoggedIn && window.location.pathname.includes('index.html')) {
+    if (isLoggedIn && isLoginPage) {
         window.location.href = 'dashboard.html';
         return true;
     }
