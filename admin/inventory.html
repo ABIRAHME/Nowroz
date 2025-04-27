@@ -24,6 +24,57 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="js/config.js"></script>
+    
+    <!-- Inline authentication check -->
+    <script>
+        // Check if user is logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const currentUser = sessionStorage.getItem('adminUsername');
+            
+            if (!isLoggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Set admin name if element exists
+            const adminNameElement = document.getElementById('adminName');
+            if (adminNameElement && currentUser) {
+                adminNameElement.textContent = currentUser;
+            }
+            
+            const mobileAdminNameElement = document.getElementById('mobileAdminName');
+            if (mobileAdminNameElement && currentUser) {
+                mobileAdminNameElement.textContent = currentUser;
+            }
+            
+            // Handle logout if logout button exists
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    // Clear session storage
+                    sessionStorage.removeItem('adminLoggedIn');
+                    sessionStorage.removeItem('adminUsername');
+                    
+                    // Redirect to login page
+                    window.location.href = 'index.html';
+                });
+            }
+            
+            // Handle mobile logout button if it exists
+            const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', function() {
+                    // Clear session storage
+                    sessionStorage.removeItem('adminLoggedIn');
+                    sessionStorage.removeItem('adminUsername');
+                    
+                    // Redirect to login page
+                    window.location.href = 'index.html';
+                });
+            }
+        });
+    </script>
     <!-- DataTables -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -262,7 +313,6 @@
         </div>
     </div>
     
-    <script src="js/auth-fix.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/mobile-nav.js"></script>
 </body>

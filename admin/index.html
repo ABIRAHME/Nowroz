@@ -56,6 +56,55 @@
         </div>
     </div>
     
-    <script src="js/auth-fix.js"></script>
+    <!-- Inline authentication script to avoid path issues -->
+    <script>
+        // Define admin users
+        const adminUsers = [
+            { username: 'ahmedabir', password: 'Ahmedabir2025' },
+            { username: 'hasibulhira', password: 'Hasibulhira2025' },
+            { username: 'muhammadsojib', password: 'Muhammadsojib2025' },
+            { username: 'cofounder', password: 'Cofounder2025' }
+        ];
+
+        // Handle login form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get login form
+            const loginForm = document.getElementById('loginForm');
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('username').value.trim();
+                    const password = document.getElementById('password').value;
+                    const errorMessage = document.getElementById('error-message');
+                    
+                    // Find user
+                    const user = adminUsers.find(user => 
+                        user.username === username && user.password === password
+                    );
+                    
+                    if (user) {
+                        // Set session storage
+                        sessionStorage.setItem('adminLoggedIn', 'true');
+                        sessionStorage.setItem('adminUsername', username);
+                        
+                        // Redirect to dashboard
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        // Show error message
+                        errorMessage.textContent = 'Invalid username or password';
+                        errorMessage.classList.remove('hidden');
+                    }
+                });
+            }
+
+            // Check if user is already logged in
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            if (isLoggedIn) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
 </body>
 </html>

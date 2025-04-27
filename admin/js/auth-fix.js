@@ -15,7 +15,11 @@ function checkAuth() {
     
     // Get the current path
     const currentPath = window.location.pathname;
-    const isLoginPage = currentPath.endsWith('index.html') || currentPath.endsWith('/admin/') || currentPath === '/admin';
+    // More robust login page detection for various deployment environments
+    const isLoginPage = currentPath.endsWith('index.html') || 
+                       currentPath.endsWith('/admin/') || 
+                       currentPath === '/admin' || 
+                       currentPath.includes('/admin') && currentPath.split('/').pop() === '';
     
     // If not logged in and not on login page, redirect to login
     if (!isLoggedIn && !isLoginPage) {
