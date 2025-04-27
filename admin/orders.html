@@ -26,9 +26,57 @@
     <!-- JSZip for label downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/auth-fix.js"></script>
     
     <!-- Inline authentication check -->
     <script>
+        // Define admin users
+        const adminUsers = [
+            { username: 'ahmedabir', password: 'Ahmedabir2025' },
+            { username: 'hasibulhira', password: 'Hasibulhira2025' },
+            { username: 'muhammadsojib', password: 'Muhammadsojib2025' },
+            { username: 'cofounder', password: 'Cofounder2025' }
+        ];
+
+        // Check if user is logged in
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const currentUser = sessionStorage.getItem('adminUsername');
+            
+            // Get the current path
+            const currentPath = window.location.pathname;
+            // More robust login page detection for various deployment environments
+            const isLoginPage = currentPath.endsWith('index.html') || 
+                               currentPath.endsWith('/admin/') || 
+                               currentPath === '/admin' || 
+                               currentPath.includes('/admin') && currentPath.split('/').pop() === '';
+            
+            // If not logged in and not on login page, redirect to login
+            if (!isLoggedIn && !isLoginPage) {
+                window.location.href = currentPath.includes('/admin/') ? 'index.html' : '/admin/index.html';
+                return false;
+            }
+            
+            // If logged in and on login page, redirect to dashboard
+            if (isLoggedIn && isLoginPage) {
+                window.location.href = 'dashboard.html';
+                return true;
+            }
+            
+            // Set admin name if element exists
+            const adminNameElement = document.getElementById('adminName');
+            if (adminNameElement && currentUser) {
+                adminNameElement.textContent = currentUser;
+            }
+            
+            const mobileAdminNameElement = document.getElementById('mobileAdminName');
+            if (mobileAdminNameElement && currentUser) {
+                mobileAdminNameElement.textContent = currentUser;
+            }
+            
+            return isLoggedIn;
+        }
+        
         // Check if user is logged in
         document.addEventListener('DOMContentLoaded', function() {
             const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
@@ -231,21 +279,537 @@
     
     
     <script>
-        // Make config available globally for the orders.js file
+        // Make config available globally
         window.firebaseConfig = firebaseConfig;
     </script>
-    <script src="js/orders.js"></script>
-    <script src="js/mobile-nav.js"></script>
+    
+    <!-- Inlined orders.js -->
     <script>
-        // Set mobile admin name
-        document.getElementById('mobileAdminName').textContent = sessionStorage.getItem('adminUsername');
-        
-        // Mobile logout button
-        document.getElementById('mobileLogoutBtn').addEventListener('click', function() {
-            sessionStorage.removeItem('adminLoggedIn');
-            sessionStorage.removeItem('adminUsername');
-            window.location.href = 'index.html';
+        // Orders page functionality
+
+        // Global variable for current selected order ID
+        let currentOrderId = null;
+        let database;
+        let ordersRef;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            if (!checkAuth()) return;
+            
+            // Display admin name
+            const adminName = document.getElementById('adminName');
+            if (adminName) {
+                adminName.textContent = sessionStorage.getItem('adminUsername');
+            }
+            
+            // Initialize Firebase (only if not already initialized)
+            try {
+                // Check if Firebase is already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(window.firebaseConfig);
+                }
+                database = firebase.database();
+            } catch (e) {
+                console.error('Firebase initialization error:', e);
+                return;
+            }
+            
+            // Reference to orders in Firebase
+            ordersRef = database.ref('orders');
+            
+            // DOM elements
+            const ordersTable = document.getElementById('ordersTable');
+            const statusFilter = document.getElementById('statusFilter');
+            const orderModal = document.getElementById('orderModal');
+            const closeModal = document.getElementById('closeModal');
+            const orderDetails = document.getElementById('orderDetails');
+            const statusUpdate = document.getElementById('statusUpdate');
+            const updateStatus = document.getElementById('updateStatus');
+            const downloadLabelsBtn = document.getElementById('downloadLabelsBtn');
+            
+            // Load all orders initially
+            loadOrders(ordersRef, 'all');
+            
+            // Filter orders by status
+            if (statusFilter) {
+                statusFilter.addEventListener('change', function() {
+                    loadOrders(ordersRef, this.value);
+                });
+            }
+            
+            // Download processing order labels
+            if (downloadLabelsBtn) {
+                downloadLabelsBtn.addEventListener('click', function() {
+                    generateProcessingOrderLabels();
+                });
+            }
+            
+            // Close modal
+            if (closeModal) {
+                closeModal.addEventListener('click', function() {
+                    orderModal.classList.add('hidden');
+                });
+            }
+            
+            // Update order status
+            if (updateStatus) {
+                // Remove any existing event listeners to prevent duplicates
+                updateStatus.removeEventListener('click', updateOrderStatus);
+                
+                // Add event listener with named function for better debugging
+                updateStatus.addEventListener('click', updateOrderStatus);
+                
+                function updateOrderStatus() {
+                    if (!currentOrderId) {
+                        console.error('No order ID selected');
+                        showToast('Error: No order selected');
+                        return;
+                    }
+                    
+                    const newStatus = statusUpdate.value;
+                    console.log('Updating order status:', currentOrderId, newStatus);
+                    
+                    // Update order status in Firebase
+                    // Make sure we're using the correct path to update the status
+                    const orderRef = database.ref('orders/' + currentOrderId);
+                    
+                    // First check if the order exists
+                    orderRef.once('value')
+                        .then((snapshot) => {
+                            if (!snapshot.exists()) {
+                                throw new Error('Order not found in database');
+                            }
+                            
+                            // Update the status field
+                            return orderRef.update({ status: newStatus });
+                        })
+                        .then(() => {
+                            console.log('Status updated successfully in Firebase');
+                            // Reload orders
+                            loadOrders(ordersRef, statusFilter.value);
+                            
+                            // Close modal
+                            orderModal.classList.add('hidden');
+                            
+                            // Show success message with toast
+                            showToast('Order status updated successfully');
+                        })
+                        .catch(error => {
+                            console.error('Error updating order status:', error);
+                            showToast('Error updating order status: ' + error.message);
+                        });
+                }
+            }
         });
+
+        /**
+         * Load orders from Firebase
+         * @param {Object} ordersRef - Firebase reference to orders
+         * @param {string} statusFilter - Status to filter by
+         */
+        function loadOrders(ordersRef, statusFilter) {
+            const ordersTable = document.getElementById('ordersTable');
+            if (!ordersTable) return;
+            
+            // Clear the table
+            ordersTable.innerHTML = '<tr><td class="px-6 py-4 text-sm text-gray-500" colspan="7">Loading orders...</td></tr>';
+            
+            ordersRef.once('value')
+                .then((snapshot) => {
+                    const orders = snapshot.val() || {};
+                    console.log('Orders data:', orders); // Debug log
+                    let ordersList = Object.entries(orders).map(([id, data]) => {
+                        return { id, ...data };
+                    });
+                    
+                    // Filter by status if not 'all'
+                    if (statusFilter !== 'all') {
+                        ordersList = ordersList.filter(order => order.status === statusFilter);
+                    }
+                    
+                    // Sort orders by date (newest first)
+                    ordersList.sort((a, b) => {
+                        const dateA = new Date(a.orderDate || a.timestamp);
+                        const dateB = new Date(b.orderDate || b.timestamp);
+                        return dateB - dateA;
+                    });
+                    
+                    // Clear the table
+                    ordersTable.innerHTML = '';
+                    
+                    if (ordersList.length === 0) {
+                        ordersTable.innerHTML = `
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-gray-500" colspan="7">No orders found</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    // Add orders to the table
+                    ordersList.forEach(order => {
+                        const date = new Date(order.orderDate || order.timestamp);
+                        const formattedDate = date.toLocaleDateString();
+                        
+                        const statusClass = getStatusClass(order.status);
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.id.substring(0, 8)}...</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.customer.fullName || 'Unknown'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.product.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">৳${order.product.price}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedDate}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                    ${order.status || 'pending'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-sage hover:text-green-700 view-order" data-id="${order.id}">View Details</button>
+                            </td>
+                        `;
+                        
+                        ordersTable.appendChild(row);
+                        
+                        // Add event listener to view order button
+                        const viewButton = row.querySelector('.view-order');
+                        viewButton.addEventListener('click', function() {
+                            const orderId = this.getAttribute('data-id');
+                            currentOrderId = orderId; // Set the current order ID
+                            showOrderDetails(order);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading orders:', error);
+                    ordersTable.innerHTML = `
+                        <tr>
+                            <td class="px-6 py-4 text-sm text-red-500" colspan="7">Error loading orders: ${error.message}</td>
+                        </tr>
+                    `;
+                });
+        }
+
+        /**
+         * Get CSS class for order status
+         * @param {string} status - Order status
+         * @returns {string} CSS class
+         */
+        function getStatusClass(status) {
+            switch(status) {
+                case 'pending':
+                    return 'bg-yellow-100 text-yellow-800';
+                case 'processing':
+                    return 'bg-blue-100 text-blue-800';
+                case 'completed':
+                    return 'bg-green-100 text-green-800';
+                case 'cancelled':
+                    return 'bg-red-100 text-red-800';
+                default:
+                    return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        /**
+         * Show order details in modal
+         * @param {Object} order - Order object
+         */
+        function showOrderDetails(order) {
+            const orderModal = document.getElementById('orderModal');
+            const orderDetails = document.getElementById('orderDetails');
+            const statusUpdate = document.getElementById('statusUpdate');
+            
+            if (!orderModal || !orderDetails) return;
+            
+            // Set current status in dropdown
+            if (statusUpdate) {
+                statusUpdate.value = order.status || 'pending';
+            }
+            
+            // Format date
+            const date = new Date(order.orderDate || order.timestamp);
+            const formattedDate = date.toLocaleDateString();
+            const formattedTime = date.toLocaleTimeString();
+            
+            // Build customer details
+            const customer = order.customer || {};
+            const address = customer.address || {};
+            
+            // Build product details
+            const product = order.product || {};
+            
+            // Build HTML for order details
+            let detailsHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Order Information</h4>
+                        <div class="space-y-3">
+                            <p><span class="font-medium">Order ID:</span> ${order.id}</p>
+                            <p><span class="font-medium">Date:</span> ${formattedDate} at ${formattedTime}</p>
+                            <p><span class="font-medium">Status:</span> <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(order.status)}">${order.status || 'pending'}</span></p>
+                            <p><span class="font-medium">Payment Method:</span> ${order.paymentMethod || 'Cash on Delivery'}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Customer Information</h4>
+                        <div class="space-y-3">
+                            <p><span class="font-medium">Name:</span> ${customer.fullName || 'N/A'}</p>
+                            <p><span class="font-medium">Email:</span> ${customer.email || 'N/A'}</p>
+                            <p><span class="font-medium">Phone:</span> ${customer.phone || 'N/A'}</p>
+                            <p><span class="font-medium">Address:</span> ${address.street || 'N/A'}, ${address.city || ''}, ${address.state || ''} ${address.zip || ''}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h4 class="text-lg font-medium text-gray-800 mb-4">Product Information</h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center">
+                            <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-4">
+                                <img src="${product.image || '../img/product-placeholder.jpg'}" alt="${product.name || 'Product'}" class="w-20 h-20 object-cover rounded-md">
+                            </div>
+                            <div class="flex-grow">
+                                <h5 class="text-md font-medium text-gray-800">${product.name || 'Unknown Product'}</h5>
+                                <p class="text-sm text-gray-500">${product.description || 'No description available'}</p>
+                                <div class="mt-2 flex justify-between">
+                                    <span class="text-sm text-gray-500">Quantity: ${product.quantity || 1}</span>
+                                    <span class="text-sm font-medium text-gray-800">৳${product.price || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h4 class="text-lg font-medium text-gray-800 mb-4">Order Summary</h4>
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="flex justify-between">
+                            <span class="text-base font-medium text-gray-800">Subtotal</span>
+                            <span class="text-base text-gray-600">৳${product.price || 0}</span>
+                        </div>
+                        <div class="flex justify-between mt-2">
+                            <span class="text-base font-medium text-gray-800">Shipping</span>
+                            <span class="text-base text-gray-600">৳${order.shippingCost || 0}</span>
+                        </div>
+                        <div class="flex justify-between mt-4 pt-4 border-t border-gray-200">
+                            <span class="text-lg font-bold text-gray-800">Total</span>
+                            <span class="text-lg font-bold text-gray-800">৳${(parseFloat(product.price || 0) + parseFloat(order.shippingCost || 0)).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Set HTML
+            orderDetails.innerHTML = detailsHTML;
+            
+            // Show modal
+            orderModal.classList.remove('hidden');
+        }
+
+        /**
+         * Generate shipping labels for processing orders
+         */
+        function generateProcessingOrderLabels() {
+            // Get all processing orders
+            ordersRef.orderByChild('status').equalTo('processing').once('value')
+                .then((snapshot) => {
+                    const orders = snapshot.val() || {};
+                    const ordersList = Object.entries(orders).map(([id, data]) => {
+                        return { id, ...data };
+                    });
+                    
+                    if (ordersList.length === 0) {
+                        showToast('No processing orders found');
+                        return;
+                    }
+                    
+                    // Create a new JSZip instance
+                    const zip = new JSZip();
+                    
+                    // Generate HTML for each order label
+                    ordersList.forEach(order => {
+                        const customer = order.customer || {};
+                        const address = customer.address || {};
+                        const product = order.product || {};
+                        
+                        // Create HTML content for the label
+                        const labelHTML = `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="UTF-8">
+                                <title>Shipping Label - ${order.id}</title>
+                                <style>
+                                    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                                    .label { border: 1px solid #000; padding: 15px; max-width: 400px; }
+                                    .header { text-align: center; margin-bottom: 15px; }
+                                    .logo { font-size: 24px; font-weight: bold; }
+                                    .order-id { margin-top: 5px; font-size: 12px; }
+                                    .section { margin-bottom: 15px; }
+                                    .section-title { font-weight: bold; margin-bottom: 5px; }
+                                    .address { line-height: 1.4; }
+                                    .product { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="label">
+                                    <div class="header">
+                                        <div class="logo">NOWROZ</div>
+                                        <div class="order-id">Order #: ${order.id}</div>
+                                    </div>
+                                    
+                                    <div class="section">
+                                        <div class="section-title">Ship To:</div>
+                                        <div class="address">
+                                            ${customer.fullName || 'N/A'}<br>
+                                            ${address.street || 'N/A'}<br>
+                                            ${address.city || ''} ${address.state || ''} ${address.zip || ''}<br>
+                                            Phone: ${customer.phone || 'N/A'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="section">
+                                        <div class="section-title">Order Details:</div>
+                                        <div>Date: ${new Date(order.orderDate || order.timestamp).toLocaleDateString()}</div>
+                                        <div>Payment: ${order.paymentMethod || 'Cash on Delivery'}</div>
+                                        
+                                        <div class="product">
+                                            <div><strong>${product.name || 'Unknown Product'}</strong></div>
+                                            <div>Quantity: ${product.quantity || 1}</div>
+                                            <div>Price: ৳${product.price || 0}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                        `;
+                        
+                        // Add the HTML file to the zip
+                        zip.file(`label-${order.id}.html`, labelHTML);
+                    });
+                    
+                    // Generate the zip file
+                    zip.generateAsync({ type: 'blob' })
+                        .then(function(content) {
+                            // Create a download link
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(content);
+                            link.download = 'shipping-labels.zip';
+                            link.click();
+                            
+                            // Show success message
+                            showToast(`${ordersList.length} shipping labels generated`);
+                        });
+                })
+                .catch(error => {
+                    console.error('Error generating labels:', error);
+                    showToast('Error generating labels: ' + error.message);
+                });
+        }
+
+        /**
+         * Show toast notification
+         * @param {string} message - Message to display
+         */
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            if (!toast || !toastMessage) return;
+            
+            // Set message
+            toastMessage.textContent = message;
+            
+            // Show toast
+            toast.classList.remove('translate-y-full', 'opacity-0');
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+    
+    <!-- Inlined mobile-nav.js -->
+    <script>
+        // Mobile navigation functionality for admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create mobile menu toggle button if it doesn't exist
+            if (!document.getElementById('mobileMenuToggle')) {
+                const header = document.querySelector('.p-6');
+                if (header) {
+                    // Add relative positioning to the sidebar container for proper button placement
+                    const sidebarContainer = document.querySelector('.w-full.md\\:w-64');
+                    if (sidebarContainer) {
+                        sidebarContainer.style.position = 'relative';
+                    }
+                    
+                    const toggleButton = document.createElement('button');
+                    toggleButton.id = 'mobileMenuToggle';
+                    toggleButton.className = 'md:hidden absolute top-6 right-4 text-sage z-50';
+                    toggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    `;
+                    toggleButton.addEventListener('click', toggleMobileMenu);
+                    header.parentNode.insertBefore(toggleButton, header.nextSibling);
+                }
+            }
+            
+            // Add mobile menu class to the navigation if not already present
+            const nav = document.querySelector('nav');
+            if (nav && !nav.classList.contains('mobile-nav')) {
+                nav.classList.add('mobile-nav');
+                nav.classList.add('md:block');
+                
+                // Only hide on mobile initially
+                if (window.innerWidth < 768) {
+                    nav.classList.add('hidden');
+                }
+                
+                // Add z-index and position for mobile view
+                nav.style.zIndex = '50';
+                
+                // Add background color and shadow for better visibility on mobile
+                nav.classList.add('bg-white');
+                
+                // Add responsive styles for mobile view
+                if (window.innerWidth < 768) {
+                    nav.style.position = 'absolute';
+                    nav.style.width = '100%';
+                    nav.style.left = '0';
+                    nav.style.top = '70px'; // Position below header
+                    nav.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                }
+            }
+            
+            // Set mobile admin name
+            const mobileAdminNameElement = document.getElementById('mobileAdminName');
+            if (mobileAdminNameElement) {
+                mobileAdminNameElement.textContent = sessionStorage.getItem('adminUsername');
+            }
+            
+            // Mobile logout button
+            const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', function() {
+                    sessionStorage.removeItem('adminLoggedIn');
+                    sessionStorage.removeItem('adminUsername');
+                    window.location.href = 'index.html';
+                });
+            }
+        });
+        
+        // Toggle mobile menu function
+        function toggleMobileMenu() {
+            const nav = document.querySelector('nav');
+            if (nav) {
+                nav.classList.toggle('hidden');
+            }
+        }
     </script>
 </body>
 </html>

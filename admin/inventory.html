@@ -24,6 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/auth-fix.js"></script>
     
     <!-- Inline authentication check -->
     <script>
@@ -313,7 +314,363 @@
         </div>
     </div>
     
-    <script src="js/inventory.js"></script>
-    <script src="js/mobile-nav.js"></script>
+    <!-- Inlined inventory.js -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Make sure auth-fix.js has loaded and checkAuth is available
+            if (typeof checkAuth !== 'function') {
+                console.error('Authentication function not found');
+                return;
+            }
+            
+            // Check if user is authenticated
+            if (!checkAuth()) return;
+            
+            // Display admin name
+            const adminName = document.getElementById('adminName');
+            if (adminName) {
+                adminName.textContent = sessionStorage.getItem('adminUsername');
+            }
+            
+            // Initialize Firebase
+            let database;
+            try {
+                // Check if Firebase is already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(window.firebaseConfig);
+                }
+                database = firebase.database();
+            } catch (e) {
+                console.error('Firebase initialization error:', e);
+                return;
+            }
+            
+            // Reference to inventory in Firebase
+            const inventoryRef = database.ref('inventory');
+            
+            // DOM Elements
+            const inventoryForm = document.getElementById('inventoryForm');
+            const formTitle = document.getElementById('formTitle');
+            const productIdInput = document.getElementById('productId');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            // Initialize DataTable
+            const table = $('#inventoryTable').DataTable({
+                responsive: true,
+                columns: [
+                    { data: 'id' },
+                    { data: 'name' },
+                    { data: 'categories' },
+                    { data: 'sizes' },
+                    { data: 'colors' },
+                    { data: 'cost' },
+                    { data: 'price' },
+                    { data: 'stock' },
+                    { 
+                        data: null,
+                        defaultContent: '<button class="edit-btn bg-blue-500 text-white px-2 py-1 rounded mr-1 text-xs">Edit</button>' +
+                                       '<button class="delete-btn bg-red-500 text-white px-2 py-1 rounded text-xs">Delete</button>',
+                        orderable: false
+                    }
+                ],
+                columnDefs: [
+                    { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-500', targets: '_all' }
+                ]
+            });
+            
+            // Load inventory data
+            loadInventoryData();
+            
+            // Form submission handler
+            inventoryForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveProduct();
+            });
+            
+            // Reset button handler
+            resetBtn.addEventListener('click', function() {
+                resetForm();
+            });
+            
+            // Edit and Delete button handlers
+            $('#inventoryTable tbody').on('click', '.edit-btn', function() {
+                const data = table.row($(this).parents('tr')).data();
+                editProduct(data);
+            });
+            
+            $('#inventoryTable tbody').on('click', '.delete-btn', function() {
+                const data = table.row($(this).parents('tr')).data();
+                if (confirm(`Are you sure you want to delete ${data.name}?`)) {
+                    deleteProduct(data.id);
+                }
+            });
+            
+            /**
+             * Show toast notification
+             * @param {string} message - Message to display
+             * @param {string} type - Type of toast (success or error)
+             * @param {number} duration - Duration in milliseconds
+             */
+            function showToast(message, type = 'success', duration = 3000) {
+                // Create toast element if it doesn't exist
+                let toast = document.getElementById('toast');
+                
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'toast';
+                    toast.className = 'fixed bottom-4 right-4 py-3 px-6 rounded-lg shadow-lg transform transition-transform duration-300 translate-y-full opacity-0 z-50';
+                    
+                    const toastMessage = document.createElement('span');
+                    toastMessage.id = 'toastMessage';
+                    toast.appendChild(toastMessage);
+                    
+                    document.body.appendChild(toast);
+                }
+                
+                // Get toast message element
+                const toastMessage = document.getElementById('toastMessage');
+                
+                // Set toast type (success or error)
+                if (type === 'error') {
+                    toast.classList.remove('bg-sage');
+                    toast.classList.add('bg-red-500');
+                } else {
+                    toast.classList.remove('bg-red-500');
+                    toast.classList.add('bg-sage');
+                }
+                
+                // Set message
+                toastMessage.textContent = message;
+                
+                // Show toast
+                toast.classList.remove('translate-y-full', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                
+                // Hide toast after duration
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-full', 'opacity-0');
+                }, duration);
+            }
+            
+            /**
+             * Load inventory data from Firebase
+             */
+            function loadInventoryData() {
+                inventoryRef.on('value', (snapshot) => {
+                    const inventory = snapshot.val() || {};
+                    
+                    // Clear existing table data
+                    table.clear();
+                    
+                    // Add data to table
+                    Object.entries(inventory).forEach(([id, product]) => {
+                        table.row.add({
+                            id: id,
+                            name: product.name || '',
+                            categories: (product.categories || []).join(', '),
+                            sizes: (product.sizes || []).join(', '),
+                            colors: (product.colors || []).join(', '),
+                            cost: product.cost || 0,
+                            price: product.price || 0,
+                            stock: product.stock || 0
+                        });
+                    });
+                    
+                    // Draw the table
+                    table.draw();
+                }, (error) => {
+                    console.error('Error loading inventory:', error);
+                    showToast('Error loading inventory: ' + error.message, 'error');
+                });
+            }
+            
+            /**
+             * Save product to Firebase
+             */
+            function saveProduct() {
+                // Get form values
+                const productId = productIdInput.value.trim();
+                const name = document.getElementById('productName').value.trim();
+                const description = document.getElementById('productDescription').value.trim();
+                const categories = document.getElementById('productCategories').value.split(',').map(cat => cat.trim()).filter(cat => cat);
+                const sizes = document.getElementById('productSizes').value.split(',').map(size => size.trim()).filter(size => size);
+                const colors = document.getElementById('productColors').value.split(',').map(color => color.trim()).filter(color => color);
+                const cost = parseFloat(document.getElementById('productCost').value) || 0;
+                const price = parseFloat(document.getElementById('productPrice').value) || 0;
+                const stock = parseInt(document.getElementById('productStock').value) || 0;
+                
+                // Validate required fields
+                if (!name) {
+                    showToast('Product name is required', 'error');
+                    return;
+                }
+                
+                // Create product object
+                const product = {
+                    name,
+                    description,
+                    categories,
+                    sizes,
+                    colors,
+                    cost,
+                    price,
+                    stock,
+                    updatedAt: Date.now()
+                };
+                
+                // Save to Firebase
+                let savePromise;
+                
+                if (productId) {
+                    // Update existing product
+                    savePromise = inventoryRef.child(productId).update(product);
+                } else {
+                    // Add new product
+                    savePromise = inventoryRef.push(product);
+                }
+                
+                savePromise
+                    .then(() => {
+                        showToast(productId ? 'Product updated successfully' : 'Product added successfully');
+                        resetForm();
+                    })
+                    .catch((error) => {
+                        console.error('Error saving product:', error);
+                        showToast('Error saving product: ' + error.message, 'error');
+                    });
+            }
+            
+            /**
+             * Edit product
+             * @param {Object} product - Product data
+             */
+            function editProduct(product) {
+                // Set form title
+                formTitle.textContent = 'Edit Product';
+                
+                // Set form values
+                productIdInput.value = product.id;
+                document.getElementById('productName').value = product.name || '';
+                document.getElementById('productDescription').value = product.description || '';
+                document.getElementById('productCategories').value = product.categories || '';
+                document.getElementById('productSizes').value = product.sizes || '';
+                document.getElementById('productColors').value = product.colors || '';
+                document.getElementById('productCost').value = product.cost || 0;
+                document.getElementById('productPrice').value = product.price || 0;
+                document.getElementById('productStock').value = product.stock || 0;
+                
+                // Scroll to form
+                inventoryForm.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            /**
+             * Delete product
+             * @param {string} productId - Product ID
+             */
+            function deleteProduct(productId) {
+                inventoryRef.child(productId).remove()
+                    .then(() => {
+                        showToast('Product deleted successfully');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting product:', error);
+                        showToast('Error deleting product: ' + error.message, 'error');
+                    });
+            }
+            
+            /**
+             * Reset form
+             */
+            function resetForm() {
+                // Reset form title
+                formTitle.textContent = 'Add New Product';
+                
+                // Clear form values
+                productIdInput.value = '';
+                inventoryForm.reset();
+            }
+        });
+    </script>
+    
+    <!-- Inlined mobile-nav.js -->
+    <script>
+        // Mobile navigation functionality for admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create mobile menu toggle button if it doesn't exist
+            if (!document.getElementById('mobileMenuToggle')) {
+                const header = document.querySelector('.p-6');
+                if (header) {
+                    // Add relative positioning to the sidebar container for proper button placement
+                    const sidebarContainer = document.querySelector('.w-full.md\\:w-64');
+                    if (sidebarContainer) {
+                        sidebarContainer.style.position = 'relative';
+                    }
+                    
+                    const toggleButton = document.createElement('button');
+                    toggleButton.id = 'mobileMenuToggle';
+                    toggleButton.className = 'md:hidden absolute top-6 right-4 text-sage z-50';
+                    toggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    `;
+                    toggleButton.addEventListener('click', toggleMobileMenu);
+                    header.parentNode.insertBefore(toggleButton, header.nextSibling);
+                }
+            }
+            
+            // Add mobile menu class to the navigation if not already present
+            const nav = document.querySelector('nav');
+            if (nav && !nav.classList.contains('mobile-nav')) {
+                nav.classList.add('mobile-nav');
+                nav.classList.add('md:block');
+                
+                // Only hide on mobile initially
+                if (window.innerWidth < 768) {
+                    nav.classList.add('hidden');
+                }
+                
+                // Add z-index and position for mobile view
+                nav.style.zIndex = '50';
+                
+                // Add background color and shadow for better visibility on mobile
+                nav.classList.add('bg-white');
+                
+                // Add responsive styles for mobile view
+                if (window.innerWidth < 768) {
+                    nav.style.position = 'absolute';
+                    nav.style.width = '100%';
+                    nav.style.left = '0';
+                    nav.style.top = '70px'; // Position below header
+                    nav.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                }
+            }
+            
+            // Set mobile admin name
+            const mobileAdminNameElement = document.getElementById('mobileAdminName');
+            if (mobileAdminNameElement) {
+                mobileAdminNameElement.textContent = sessionStorage.getItem('adminUsername');
+            }
+            
+            // Mobile logout button
+            const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', function() {
+                    sessionStorage.removeItem('adminLoggedIn');
+                    sessionStorage.removeItem('adminUsername');
+                    window.location.href = 'index.html';
+                });
+            }
+        });
+        
+        // Toggle mobile menu function
+        function toggleMobileMenu() {
+            const nav = document.querySelector('nav');
+            if (nav) {
+                nav.classList.toggle('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
