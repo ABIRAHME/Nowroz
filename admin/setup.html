@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup - Nowroz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cream': '#FAF1E6',
+                        'light-cream': '#FDFAF6',
+                        'mint': '#E4EFE7',
+                        'sage': '#99BC85',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="js/config.js"></script>
+</head>
+<body class="bg-light-cream min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-6 sm:p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-sage mb-2">NOWROZ</h1>
+            <h2 class="text-xl font-semibold text-gray-700">Admin Setup</h2>
+            <p class="text-gray-600 mt-2">This page initializes admin users in Firebase Authentication</p>
+        </div>
+        
+        <div id="setupStatus" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+            Ready to set up admin users. Click the button below to begin.
+        </div>
+        
+        <form id="setupForm" class="space-y-6">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <p class="text-yellow-700">
+                    <strong>Note:</strong> This setup will create the following admin users in Firebase Authentication:
+                </p>
+                <ul class="list-disc pl-5 mt-2 text-yellow-700">
+                    <li>ahmedabir@example.com</li>
+                    <li>hasibulhira@example.com</li>
+                    <li>muhammadsojib@example.com</li>
+                    <li>cofounder@example.com</li>
+                </ul>
+                <p class="text-yellow-700 mt-2">
+                    You should only run this setup once. If users already exist, the setup will skip them.
+                </p>
+            </div>
+            
+            <div>
+                <button id="setupBtn" type="submit" 
+                    class="w-full bg-sage text-white py-2 px-4 rounded-md hover:bg-opacity-90 transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sage">
+                    Initialize Admin Users
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-6 text-center">
+            <a href="index.html" class="text-sm text-sage hover:underline">Go to Login Page</a>
+        </div>
+    </div>
+    
+    <!-- Setup script -->
+    <script src="js/setup-firebase-users.js"></script>
+</body>
+</html>

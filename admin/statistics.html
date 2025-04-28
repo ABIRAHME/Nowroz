@@ -22,58 +22,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/config.js"></script>
-    <script src="js/auth-fix.js"></script>
-    
-    <!-- Inline authentication check -->
-    <script>
-        // Check if user is logged in
-        document.addEventListener('DOMContentLoaded', function() {
-            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-            const currentUser = sessionStorage.getItem('adminUsername');
-            
-            if (!isLoggedIn) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Set admin name if element exists
-            const adminNameElement = document.getElementById('adminName');
-            if (adminNameElement && currentUser) {
-                adminNameElement.textContent = currentUser;
-            }
-            
-            const mobileAdminNameElement = document.getElementById('mobileAdminName');
-            if (mobileAdminNameElement && currentUser) {
+    <script src="js/firebase-auth.js"></script>
                 mobileAdminNameElement.textContent = currentUser;
             }
             
             // Handle logout if logout button exists
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
+                // Use the common logout handler from logout.js
                 logoutBtn.addEventListener('click', function() {
-                    // Clear session storage
-                    sessionStorage.removeItem('adminLoggedIn');
-                    sessionStorage.removeItem('adminUsername');
-                    
-                    // Redirect to login page
-                    window.location.href = 'index.html';
+                    if (window.firebaseAuth && typeof window.firebaseAuth.logout === 'function') {
+                        window.firebaseAuth.logout();
+                    } else {
+                        // Fallback for cases where firebaseAuth is not available
+                        localStorage.removeItem('adminLoggedIn');
+                        localStorage.removeItem('adminUsername');
+                        localStorage.removeItem('adminEmail');
+                        localStorage.removeItem('adminUid');
+                        window.location.href = 'index.html';
+                    }
                 });
             }
             
             // Handle mobile logout button if it exists
             const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
             if (mobileLogoutBtn) {
+                // Use the common logout handler from logout.js
                 mobileLogoutBtn.addEventListener('click', function() {
-                    // Clear session storage
-                    sessionStorage.removeItem('adminLoggedIn');
-                    sessionStorage.removeItem('adminUsername');
-                    
-                    // Redirect to login page
-                    window.location.href = 'index.html';
+                    if (window.firebaseAuth && typeof window.firebaseAuth.logout === 'function') {
+                        window.firebaseAuth.logout();
+                    } else {
+                        // Fallback for cases where firebaseAuth is not available
+                        localStorage.removeItem('adminLoggedIn');
+                        localStorage.removeItem('adminUsername');
+                        localStorage.removeItem('adminEmail');
+                        localStorage.removeItem('adminUid');
+                        window.location.href = 'index.html';
+                    }
                 });
             }
         });

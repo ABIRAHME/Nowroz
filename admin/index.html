@@ -20,6 +20,12 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/firebase-auth.js"></script>
 </head>
 <body class="bg-light-cream min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-6 sm:p-8">
@@ -56,17 +62,8 @@
         </div>
     </div>
     
-    <!-- Inline authentication script to avoid path issues -->
+    <!-- Authentication script -->
     <script>
-        // Define admin users
-        const adminUsers = [
-            { username: 'ahmedabir', password: 'Ahmedabir2025' },
-            { username: 'hasibulhira', password: 'Hasibulhira2025' },
-            { username: 'muhammadsojib', password: 'Muhammadsojib2025' },
-            { username: 'cofounder', password: 'Cofounder2025' }
-        ];
-
-        // Handle login form submission
         document.addEventListener('DOMContentLoaded', function() {
             // Get login form
             const loginForm = document.getElementById('loginForm');
@@ -79,30 +76,34 @@
                     const password = document.getElementById('password').value;
                     const errorMessage = document.getElementById('error-message');
                     
-                    // Find user
-                    const user = adminUsers.find(user => 
-                        user.username === username && user.password === password
-                    );
+                    // Show loading state
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = 'Logging in...';
+                    submitBtn.disabled = true;
+                    errorMessage.classList.add('hidden');
                     
-                    if (user) {
-                        // Set session storage
-                        sessionStorage.setItem('adminLoggedIn', 'true');
-                        sessionStorage.setItem('adminUsername', username);
-                        
-                        // Redirect to dashboard
-                        window.location.href = 'dashboard.html';
-                    } else {
-                        // Show error message
-                        errorMessage.textContent = 'Invalid username or password';
-                        errorMessage.classList.remove('hidden');
-                    }
+                    // Use the new Firebase auth system
+                    window.firebaseAuth.login(username, password)
+                        .then(result => {
+                            if (result.success) {
+                                // Login successful - redirect happens automatically via auth state change
+                            } else {
+                                // Show error message
+                                errorMessage.textContent = result.error || 'Invalid username or password';
+                                errorMessage.classList.remove('hidden');
+                                submitBtn.innerHTML = originalBtnText;
+                                submitBtn.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            // Show error message
+                            errorMessage.textContent = error.message || 'An error occurred during login';
+                            errorMessage.classList.remove('hidden');
+                            submitBtn.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                        });
                 });
-            }
-
-            // Check if user is already logged in
-            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-            if (isLoggedIn) {
-                window.location.href = 'dashboard.html';
             }
         });
     </script>

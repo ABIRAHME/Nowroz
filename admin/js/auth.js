@@ -10,8 +10,9 @@ const adminUsers = [
 
 // Check if user is logged in
 function checkAuth() {
-    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-    const currentUser = sessionStorage.getItem('adminUsername');
+    // Check both localStorage (preferred) and sessionStorage (legacy) for backward compatibility
+    const isLoggedIn = localStorage.getItem('adminLoggedIn') || sessionStorage.getItem('adminLoggedIn');
+    const currentUser = localStorage.getItem('adminUsername') || sessionStorage.getItem('adminUsername');
     
     // Get the current path
     const currentPath = window.location.pathname;
@@ -65,7 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
             );
             
             if (user) {
-                // Set session storage
+                // Set localStorage for better persistence in serverless environments
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminUsername', username);
+                
+                // Also set sessionStorage for backward compatibility
                 sessionStorage.setItem('adminLoggedIn', 'true');
                 sessionStorage.setItem('adminUsername', username);
                 
@@ -84,7 +89,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            // Clear session storage
+            // Clear both localStorage and sessionStorage
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminUsername');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminUid');
+            
+            // Also clear sessionStorage for backward compatibility
             sessionStorage.removeItem('adminLoggedIn');
             sessionStorage.removeItem('adminUsername');
             

@@ -22,9 +22,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="js/config.js"></script>
-    <script src="js/auth-fix.js"></script>
+    <script src="js/firebase-auth.js"></script>
     <style>
         /* Mobile navigation styles */
         @media (max-width: 768px) {
@@ -70,6 +71,18 @@
                 <button id="logoutBtn" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-300">
                     Logout
                 </button>
+                <script>
+                    // Set up logout functionality
+                    document.getElementById('logoutBtn').addEventListener('click', function() {
+                        window.firebaseAuth.logout()
+                            .then(() => {
+                                // Redirect happens automatically via auth state change
+                            })
+                            .catch(error => {
+                                console.error('Logout error:', error);
+                            });
+                    });
+                </script>
             </div>
         </div>
         
@@ -138,6 +151,18 @@
             <button id="mobileLogoutBtn" class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-300">
                 Logout
             </button>
+            <script>
+                // Set up mobile logout functionality
+                document.getElementById('mobileLogoutBtn').addEventListener('click', function() {
+                    window.firebaseAuth.logout()
+                        .then(() => {
+                            // Redirect happens automatically via auth state change
+                        })
+                        .catch(error => {
+                            console.error('Logout error:', error);
+                        });
+                });
+            </script>
         </div>
     </div>
 

@@ -22,32 +22,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <!-- JSZip for label downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/config.js"></script>
-    <script src="js/auth-fix.js"></script>
-    
-    <!-- Inline authentication check -->
-    <script>
-        // Define admin users
-        const adminUsers = [
-            { username: 'ahmedabir', password: 'Ahmedabir2025' },
-            { username: 'hasibulhira', password: 'Hasibulhira2025' },
-            { username: 'muhammadsojib', password: 'Muhammadsojib2025' },
-            { username: 'cofounder', password: 'Cofounder2025' }
-        ];
-
-        // Check if user is logged in
-        function checkAuth() {
-            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-            const currentUser = sessionStorage.getItem('adminUsername');
-            
-            // Get the current path
-            const currentPath = window.location.pathname;
-            // More robust login page detection for various deployment environments
-            const isLoginPage = currentPath.endsWith('index.html') || 
-                               currentPath.endsWith('/admin/') || 
+    <script src="js/firebase-auth.js"></script>
                                currentPath === '/admin' || 
                                currentPath.includes('/admin') && currentPath.split('/').pop() === '';
             
@@ -79,8 +59,8 @@
         
         // Check if user is logged in
         document.addEventListener('DOMContentLoaded', function() {
-            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-            const currentUser = sessionStorage.getItem('adminUsername');
+            const isLoggedIn = localStorage.getItem('adminLoggedIn') || sessionStorage.getItem('adminLoggedIn');
+            const currentUser = localStorage.getItem('adminUsername') || sessionStorage.getItem('adminUsername');
             
             if (!isLoggedIn) {
                 window.location.href = 'index.html';
@@ -102,12 +82,22 @@
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function() {
-                    // Clear session storage
-                    sessionStorage.removeItem('adminLoggedIn');
-                    sessionStorage.removeItem('adminUsername');
-                    
-                    // Redirect to login page
-                    window.location.href = 'index.html';
+                    if (window.firebaseAuth && typeof window.firebaseAuth.logout === 'function') {
+                        window.firebaseAuth.logout();
+                    } else {
+                        // Clear both localStorage and sessionStorage
+                        localStorage.removeItem('adminLoggedIn');
+                        localStorage.removeItem('adminUsername');
+                        localStorage.removeItem('adminEmail');
+                        localStorage.removeItem('adminUid');
+                        
+                        // Also clear sessionStorage for backward compatibility
+                        sessionStorage.removeItem('adminLoggedIn');
+                        sessionStorage.removeItem('adminUsername');
+                        
+                        // Redirect to login page
+                        window.location.href = 'index.html';
+                    }
                 });
             }
             
@@ -115,12 +105,22 @@
             const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
             if (mobileLogoutBtn) {
                 mobileLogoutBtn.addEventListener('click', function() {
-                    // Clear session storage
-                    sessionStorage.removeItem('adminLoggedIn');
-                    sessionStorage.removeItem('adminUsername');
-                    
-                    // Redirect to login page
-                    window.location.href = 'index.html';
+                    if (window.firebaseAuth && typeof window.firebaseAuth.logout === 'function') {
+                        window.firebaseAuth.logout();
+                    } else {
+                        // Clear both localStorage and sessionStorage
+                        localStorage.removeItem('adminLoggedIn');
+                        localStorage.removeItem('adminUsername');
+                        localStorage.removeItem('adminEmail');
+                        localStorage.removeItem('adminUid');
+                        
+                        // Also clear sessionStorage for backward compatibility
+                        sessionStorage.removeItem('adminLoggedIn');
+                        sessionStorage.removeItem('adminUsername');
+                        
+                        // Redirect to login page
+                        window.location.href = 'index.html';
+                    }
                 });
             }
         });

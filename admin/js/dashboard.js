@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Display admin name
     const adminName = document.getElementById('adminName');
     if (adminName) {
-        adminName.textContent = sessionStorage.getItem('adminUsername');
+        adminName.textContent = localStorage.getItem('adminUsername') || sessionStorage.getItem('adminUsername');
     }
     
     // Initialize Firebase (only if not already initialized)
