@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                   (order.product && order.product.price ? parseFloat(order.product.price) : 0);
                 return total + orderAmount;
             }, 0);
-        totalSalesElement.textContent = `Tk ${totalSales.toFixed(2)}tk`;
+        totalSalesElement.textContent = `${totalSales.toFixed(2)}Tk`;
         
         // Calculate cancelled orders count
         const cancelledOrders = ordersData.filter(order => order.status === 'cancelled').length;
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const stock = parseInt(product.totalStock || 0);
             return total + (price * stock);
         }, 0);
-        totalStockValueElement.textContent = `${totalStockValue.toFixed(2)}tk`;
+        totalStockValueElement.textContent = `${totalStockValue.toFixed(2)}Tk`;
     }
     
     /**
